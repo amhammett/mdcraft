@@ -1,0 +1,71 @@
+{
+  "name": "mdcraft",
+  "version": "1.1.2",
+  "description": "crafting html from markdown",
+  "bin": {
+    "mdcraft": "./bin/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "dependencies": {
+    "@types/glob": "^7.1.3",
+    "@types/js-yaml": "^3.12.5",
+    "globby": "^11.0.1",
+    "handlebars": "^4.7.6",
+    "pino": "^6.5.0",
+    "showdown": "^1.9.1",
+    "webpack": "^4.44.1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.6.0",
+    "@types/pino": "^6.3.0",
+    "@types/showdown": "^1.9.3",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^5.13",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-json": "^2.1.0",
+    "mocha": "^8.1.1",
+    "nodemon": "^2.0.4",
+    "nyc": "^15.1.0",
+    "ts-loader": "^8.0.3",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.5",
+    "webpack-cli": "^3.3.12"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "scripts": {
+    "start": "webpack --mode=production",
+    "lint": "eslint . --ext .ts",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**.test.ts\"",
+    "pretest": "npm run lint",
+    "watch": "nodemon -x \"rm -rf ./dist && npm run build || true\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amhammett/mdcraft.git"
+  },
+  "author": "amhammett",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/amhammett/mdcraft/issues"
+  },
+  "homepage": "https://github.com/amhammett/mdcraft#readme",
+  "nodemonConfig": {
+    "restartable": "rs",
+    "ignore": [
+      ".git",
+      "dist",
+      "node_modules/**/node_modules"
+    ],
+    "events": {
+      "restart": "osascript -e 'display notification \"App restarted due to:\n'$FILENAME'\" with title \"nodemon\"'"
+    },
+    "ext": "ts,json,md,hbs"
+  }
+}
