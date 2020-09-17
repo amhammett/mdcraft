@@ -14,7 +14,7 @@ function copyToDist(source: string, target: string): void {
 }
 
 function copyThemeAssets(): void {
-  for (const sourceRelPath of glob.sync('./{themes,content}/**/**.?(css|gif|jpg|png|map|svg|ttf|woff|woff2')) {
+  for (const sourceRelPath of glob.sync('./{themes,content}/**/**.?(css|gif|jpg|png|map|svg|ttf|woff|woff2)')) {
     logger.debug(sourceRelPath)
 
     if (fs.existsSync(sourceRelPath)) {
