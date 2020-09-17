@@ -159,6 +159,8 @@ function registerContentWithApi(sourceData: SourceConfig, projectData: TemplateC
 }
 
 export function generateSourceContent(): void {
+  logger.updateLevel('')
+
   if (FEATURES.hasOwnProperty('contentGeneration') && FEATURES.contentGeneration) {
     logger.info('generating source content')
 
@@ -237,11 +239,5 @@ export function generateSourceContent(): void {
 
       writeToFile(apiDataFile, JSON.stringify(apiData))
     }
-  }
-}
-
-export function generateLanding(): void {
-  if (FEATURES.hasOwnProperty('landingGeneration') && FEATURES.landingGeneration) {
-    logger.info('generating landing content')
   }
 }

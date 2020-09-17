@@ -44,6 +44,8 @@ export function command(): void {
   const HTTP_SERVER_ROOT = process.env.MDSERVER_ROOT || path.join(process.cwd(), 'dist')
   const DEFAULT_ERROR_PAGE = path.join(HTTP_SERVER_ROOT, 'error.html')
 
+  logger.updateLevel('')
+
   createServer((request: IncomingMessage, response: ServerResponse) => {
     logger.info(`${request.method} ${request.url}`)
     let errorPage

@@ -14,6 +14,7 @@ function copyToDist(source: string, target: string): void {
 }
 
 function copyThemeAssets(): void {
+  logger.info(glob.sync('./{themes}/**/**.?(css|gif|jpg|png|map|svg)'))
   for (const sourceRelPath of glob.sync('./{themes,content}/**/**.?(css|gif|jpg|png|map|svg|ttf|woff|woff2)')) {
     logger.debug(sourceRelPath)
 
@@ -27,6 +28,8 @@ function copyThemeAssets(): void {
 }
 
 export function generateSiteThemes(): void {
+  logger.updateLevel('')
+
   if (FEATURES.hasOwnProperty('themeGeneration') && FEATURES.themeGeneration) {
     logger.info('generating themes')
     copyThemeAssets()

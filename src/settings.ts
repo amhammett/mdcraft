@@ -6,11 +6,13 @@ interface FeaturesAvailability {
 
 const logger = pino()
 
-// this should be done better
-if (process.env.SILENT === 'true') {
-  logger.level = 'error'
-} else if (process.env.DEBUG === 'true') {
-  logger.level = 'debug'
+logger.updateLevel = function(): void {
+  // this should be done better
+  if (process.env.SILENT === 'true') {
+    logger.level = 'error'
+  } else if (process.env.DEBUG === 'true') {
+    logger.level = 'debug'
+  }
 }
 
 const PROJECT_ROOT_PATH = process.cwd()
