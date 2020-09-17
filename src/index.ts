@@ -1,6 +1,7 @@
 import * as craft from './craft'
 import * as server from './server'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const commands = {
   craft: craft,
@@ -51,6 +52,18 @@ function mdCraftConfig(): void {
       }
       if (configData.phonetool.imageUrl) {
         process.env.MDCRAFT_PT_IMAGE_URL = configData.phonetool.imageUrl
+      }
+    }
+    if (configData.server) {
+      if (configData.server.port) {
+        process.env.MDSERVER_PORT = configData.server.port
+      } else {
+        process.env.MDSERVER_PORT = '3001'
+      }
+      if (configData.server.path) {
+        process.env.MDSERVER_ROOT = configData.server.path
+      } else {
+        process.env.MDSERVER_PORT = path.join(process.cwd(), 'dist')
       }
     }
   }
