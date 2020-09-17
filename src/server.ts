@@ -6,10 +6,6 @@ import {logger} from './settings'
 
 export const helpText = 'server     Start a local server to serve content'
 
-const HTTP_SERVER_PORT = process.env.MDSERVER_PORT || '3001'
-const HTTP_SERVER_ROOT = process.env.MDSERVER_ROOT || path.join(process.cwd(), 'dist')
-const DEFAULT_ERROR_PAGE = path.join(HTTP_SERVER_ROOT, 'error.html')
-
 function getMimeType(extension: string): string {
   const map: {[key: string]: string} = {
     '.ico': 'image/x-icon',
@@ -44,6 +40,10 @@ function indexExists(filePath: string): boolean {
 }
 
 export function command(): void {
+  const HTTP_SERVER_PORT = process.env.MDSERVER_PORT || '3001'
+  const HTTP_SERVER_ROOT = process.env.MDSERVER_ROOT || path.join(process.cwd(), 'dist')
+  const DEFAULT_ERROR_PAGE = path.join(HTTP_SERVER_ROOT, 'error.html')
+
   createServer((request: IncomingMessage, response: ServerResponse) => {
     logger.info(`${request.method} ${request.url}`)
     let errorPage

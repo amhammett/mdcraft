@@ -3,6 +3,7 @@ import * as server from './server'
 import * as fs from 'fs'
 import * as path from 'path'
 
+const DEFAULT_HTTP_PORT = 3001
 const commands = {
   craft: craft,
   server: server,
@@ -35,10 +36,11 @@ function importPlugins(): void {
   }
 }
 
-function mdCraftConfig(): void {
+function mdCraftConfig(verbose: boolean): void {
   const configFile = `${process.cwd()}/.mdcraft.json`
 
   if (fs.existsSync(configFile)) {
+    verbose && console.log('loading mdcraft config')
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'))
     if (configData.phonetool && configData.phonetool.enable) {
       if (configData.phonetool.enabled === 'true' || configData.phonetool.enabled === true) {
@@ -46,6 +48,7 @@ function mdCraftConfig(): void {
       } else {
         process.env.PT_ENABLED = 'false'
       }
+      verbose && console.log(`PT_ENABLED = ${process.env.PT_ENABLED}`)
 
       if (configData.phonetool.linkUrl) {
         process.env.PT_LINK_URL = configData.phonetool.linkUrl
@@ -58,13 +61,16 @@ function mdCraftConfig(): void {
       if (configData.server.port) {
         process.env.MDSERVER_PORT = configData.server.port
       } else {
-        process.env.MDSERVER_PORT = '3001'
+        process.env.MDSERVER_PORT = DEFAULT_HTTP_PORT.toString()
       }
+      verbose && console.log(`MDSERVER_PORT = ${process.env.MDSERVER_PORT}`)
+
       if (configData.server.path) {
         process.env.MDSERVER_ROOT = configData.server.path
       } else {
-        process.env.MDSERVER_PORT = path.join(process.cwd(), 'dist')
+        process.env.MDSERVER_ROOT = path.join(process.cwd(), 'dist')
       }
+      verbose && console.log(`MDSERVER_ROOT = ${process.env.MDSERVER_ROOT}`)
     }
   }
 }
@@ -72,7 +78,9 @@ function mdCraftConfig(): void {
 function run(): void {
   const [,, command, ...args] = process.argv
 
-  mdCraftConfig()
+  const verbose = args.indexOf('--verbose') !== -1
+
+  mdCraftConfig(verbose)
   importPlugins()
 
   if (command in commands) {
