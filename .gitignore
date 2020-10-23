@@ -1,3 +1,8 @@
+## source files
+content
+themes
+dist/content
+dist/themes
 
 # Created by https://www.toptal.com/developers/gitignore/api/vim,nanoc,macos,windows,node,vscode
 # Edit at https://www.toptal.com/developers/gitignore?templates=vim,nanoc,macos,windows,node,vscode
