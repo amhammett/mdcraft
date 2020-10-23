@@ -59,7 +59,7 @@ function getTemplateThemePath(themeName: string): string {
   let templateFileName = `${themeName}.html.hbs`
 
   if (themeName.indexOf('/') !== -1) {
-    const themeData = themeName.split('/')[1]
+    const themeData = themeName.split('/')
     themeName = themeData[0]
     templateFileName = `${themeData[1]}.html.hbs`
   }
@@ -67,6 +67,8 @@ function getTemplateThemePath(themeName: string): string {
 
   if (searching) {
     const globalThemePath = path.join(THEME_TEMPLATE_PATH, themeName, templateFileName)
+    logger.debug(`searching for theme in ${globalThemePath}`)
+
     if (fs.existsSync(globalThemePath)) {
       themePath = globalThemePath
     }
