@@ -56,7 +56,13 @@ function postProcessContent(content: string): string {
 
 function getTemplateThemePath(themeName: string): string {
   let themePath = DEFAULT_THEME_TEMPLATE_PATH
-  const templateFileName = `${themeName}.html.hbs`
+  let templateFileName = `${themeName}.html.hbs`
+
+  if (themeName.indexOf('/') !== -1) {
+    const themeData = themeName.split('/')[1]
+    themeName = themeData[0]
+    templateFileName = `${themeData[1]}.html.hbs`
+  }
   const searching = true
 
   if (searching) {
