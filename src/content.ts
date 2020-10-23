@@ -88,15 +88,38 @@ function templateContent(data: TemplateConfig): string {
     const template = Handlebars.compile(templateFile)
     generatedPage = template(data)
   } else {
-    logger.error('unable to process template. no template found at path provided.')
+    logger.error(`unable to process template (${data.themePath}). no template found at path provided.`)
   }
 
   return generatedPage
 }
 
-function convertMarkdownToHtml(text: string): string {
+function convertMarkdownToHtml(text: string, wrap?: TemplateConfig): string {
   const converter = new Converter()
-  return converter.makeHtml(text)
+  let content = converter.makeHtml(text)
+
+  if (wrap) {
+    // {"class":"bar", "id":"barme", "element":"main"}
+    let wrapElement = 'div'
+    let wrapId = ''
+    let wrapClass = ''
+
+    if (wrap['element']) {
+      wrapElement = wrap['element']
+    }
+
+    if (wrap['id']) {
+      wrapId = ` id="${wrap['id']}" `
+    }
+
+    if (wrap['class']) {
+      wrapClass = ` class="${wrap['class']}" `
+    }
+
+    content = `<${wrapElement}${wrapId}${wrapClass}>${content}</${wrapElement}>`
+  }
+
+  return content
 }
 
 function generateHtmlFromMarkdown(sourceData: SourceConfig): void {
@@ -105,7 +128,7 @@ function generateHtmlFromMarkdown(sourceData: SourceConfig): void {
 
     const templateLookup = {
       ...sourceData.data,
-      content: convertMarkdownToHtml(sourceData.content),
+      content: sourceData.content,
       themePath: getTemplateThemePath(sourceData.data.theme),
     }
     let content = templateContent(templateLookup)
@@ -214,24 +237,34 @@ export function generateSourceContent(): void {
           collections[collectionPath]['data'] = {...sourceData.data}
           // collections[collectionPath]['data']['theme'] = sourceData.data.theme
         } else {
+          // should probably include more than just wrap
+          if ('wrap' in sourceData.data) {
+            logger.debug('including wrap details')
+            projectData['wrap'] = sourceData.data.wrap
+          }
           collections[collectionPath]['resources'].push(projectData)
         }
         // collections[collectionPath] = generateCollectionData()
       } else {
+        // this call should be refactored
+        sourceData.content = convertMarkdownToHtml(sourceData.content)
         generateHtmlFromMarkdown(sourceData)
         registerContentWithApi(sourceData, projectData, apiData)
       }
     }
 
     if (FEATURES.hasOwnProperty('collectionGeneration') && FEATURES.collectionGeneration) {
-      // logger.info('----- generating collection content')
+      logger.debug('----- generating collection content')
       for (const collectionRef in collections) {
         logger.info(`processing collection ${collectionRef}`)
+        logger.debug(collections[collectionRef])
         for (const resource of collections[collectionRef]['resources']) {
+          const itemContent = convertMarkdownToHtml(resource.content, resource.wrap)
+
           if (collections[collectionRef]['content']) {
-            collections[collectionRef]['content'] += resource.content
+            collections[collectionRef]['content'] += itemContent
           } else {
-            collections[collectionRef]['content'] = resource.content
+            collections[collectionRef]['content'] = itemContent
           }
         }
         delete collections[collectionRef]['resources']
