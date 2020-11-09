@@ -37,7 +37,7 @@ function importPlugins(): void {
 }
 
 function mdCraftConfig(verbose: boolean): void {
-  const configFile = `${process.cwd()}/.mdcraft.json`
+  const configFile = `${process.cwd()}/.mdcraft.config.json`
 
   if (fs.existsSync(configFile)) {
     // eslint-disable-next-line no-console
