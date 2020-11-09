@@ -2,6 +2,8 @@ import * as craft from './craft'
 import * as server from './server'
 import * as fs from 'fs'
 import * as path from 'path'
+import {logger} from './settings'
+
 
 const DEFAULT_HTTP_PORT = 3001
 const commands = {
@@ -40,8 +42,7 @@ function mdCraftConfig(verbose: boolean): void {
   const configFile = `${process.cwd()}/.mdcraft.config.json`
 
   if (fs.existsSync(configFile)) {
-    // eslint-disable-next-line no-console
-    console.log('loading mdcraft config')
+    logger.info('loading mdcraft config')
 
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'))
     if (configData.phonetool && configData.phonetool.enable) {
@@ -51,8 +52,7 @@ function mdCraftConfig(verbose: boolean): void {
         process.env.PT_ENABLED = 'false'
       }
 
-      // eslint-disable-next-line no-console
-      verbose && console.log(`PT_ENABLED = ${process.env.PT_ENABLED}`)
+      logger.debug(`PT_ENABLED = ${process.env.PT_ENABLED}`)
 
       if (configData.phonetool.linkUrl) {
         process.env.PT_LINK_URL = configData.phonetool.linkUrl
@@ -68,8 +68,7 @@ function mdCraftConfig(verbose: boolean): void {
         process.env.MDSERVER_PORT = DEFAULT_HTTP_PORT.toString()
       }
 
-      // eslint-disable-next-line no-console
-      verbose && console.log(`MDSERVER_PORT = ${process.env.MDSERVER_PORT}`)
+      logger.debug(`MDSERVER_PORT = ${process.env.MDSERVER_PORT}`)
 
       if (configData.server.path) {
         process.env.MDSERVER_ROOT = configData.server.path
@@ -77,8 +76,7 @@ function mdCraftConfig(verbose: boolean): void {
         process.env.MDSERVER_ROOT = path.join(process.cwd(), 'dist')
       }
 
-      // eslint-disable-next-line no-console
-      verbose && console.log(`MDSERVER_ROOT = ${process.env.MDSERVER_ROOT}`)
+      logger.debug(`MDSERVER_ROOT = ${process.env.MDSERVER_ROOT}`)
     }
   }
 }
@@ -100,9 +98,6 @@ function run(): void {
 
   if (command in commands) {
     commands[command].command()
-  } else if (command === 'args') {
-    // eslint-disable-next-line no-console
-    console.log(args)
   } else {
     help()
   }
