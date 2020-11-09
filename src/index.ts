@@ -41,7 +41,7 @@ function mdCraftConfig(verbose: boolean): void {
 
   if (fs.existsSync(configFile)) {
     // eslint-disable-next-line no-console
-    verbose && console.log('loading mdcraft config')
+    console.log('loading mdcraft config')
 
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'))
     if (configData.phonetool && configData.phonetool.enable) {

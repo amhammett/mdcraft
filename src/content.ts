@@ -95,7 +95,7 @@ function templateContent(data: TemplateConfig): string {
 }
 
 function convertMarkdownToHtml(text: string, wrap?: TemplateConfig): string {
-  const converter = new Converter()
+  const converter = new Converter({'tables': true})
   let content = converter.makeHtml(text)
 
   if (wrap) {
@@ -156,7 +156,7 @@ function parseMarkdown(pathToFile: string): SourceConfig {
 
   if (fs.existsSync(sourceData.source)) {
     try {
-      const pageDocuments = fs.readFileSync(sourceData.source, 'utf8').toString().split(/---/)
+      const pageDocuments = fs.readFileSync(sourceData.source, 'utf8').toString().split(/---\n/)
       if (pageDocuments.length > 1) {
         logger.debug('there appears to be meta data. processing')
         sourceData.data = {
