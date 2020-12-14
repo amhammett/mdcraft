@@ -1,9 +1,9 @@
 {
   "name": "mdcraft",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "crafting html from markdown",
   "bin": {
-    "mdcraft": "./bin/index.js"
+    "mdcraft": "./bin/mdcraft"
   },
   "files": [
     "bin",
@@ -23,6 +23,7 @@
     "@types/node": "^14.6.0",
     "@types/pino": "^6.3.0",
     "@types/showdown": "^1.9.3",
+    "@types/webpack-env": "^1.16.0",
     "@typescript-eslint/eslint-plugin": "^2.33.0",
     "@typescript-eslint/parser": "^2.33.0",
     "eslint": "^5.13",
@@ -30,7 +31,7 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-json": "^2.1.0",
     "mocha": "^8.1.1",
-    "nodemon": "^2.0.4",
+    "nodemon": "^2.0.6",
     "nyc": "^15.1.0",
     "ts-loader": "^8.0.3",
     "ts-node": "^8.10.2",
@@ -41,7 +42,8 @@
     "node": ">=12.0.0"
   },
   "scripts": {
-    "start": "webpack --mode=production",
+    "build": "webpack --mode=production",
+    "dev": "nodemon -x \"rm -rf ./dist && npm run build && ./bin/mdcraft craft && ./bin/mdcraft server\"",
     "lint": "eslint . --ext .ts",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**.test.ts\"",
     "pretest": "npm run lint",
@@ -62,6 +64,7 @@
     "ignore": [
       ".git",
       "dist",
+      "build",
       "node_modules/**/node_modules"
     ],
     "events": {
