@@ -1,14 +1,23 @@
-import * as craft from './craft'
-import * as server from './server'
+import * as craft from '../commands/craft'
+import * as server from '../commands/server'
 import * as fs from 'fs'
 import * as path from 'path'
-import {logger} from './settings'
+import {logger} from '../utilities/logger'
 
 
 const DEFAULT_HTTP_PORT = 3001
 const commands = {
   craft: craft,
   server: server,
+}
+
+logger.updateLevel = function(): void {
+  // this should be done better
+  if (process.env.SILENT === 'true') {
+    logger.level = 'error'
+  } else if (process.env.DEBUG === 'true') {
+    logger.level = 'debug'
+  }
 }
 
 const mdCraftMessage = [
@@ -38,13 +47,14 @@ function importPlugins(): void {
   }
 }
 
-function mdCraftConfig(verbose: boolean): void {
-  const configFile = `${process.cwd()}/.mdcraft.config.json`
+function mdCraftConfig(): any {
+  const configFile = `${process.cwd()}/mdcraft.config.js`
+  let configData: any = {}
 
   if (fs.existsSync(configFile)) {
-    logger.info('loading mdcraft config')
+    logger.info(`loading mdcraft config ${configFile}`)
+    configData = __non_webpack_require__(configFile)
 
-    const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'))
     if (configData.phonetool && configData.phonetool.enable) {
       if (configData.phonetool.enabled === 'true' || configData.phonetool.enabled === true) {
         process.env.PT_ENABLED = 'true'
@@ -79,6 +89,8 @@ function mdCraftConfig(verbose: boolean): void {
       logger.debug(`MDSERVER_ROOT = ${process.env.MDSERVER_ROOT}`)
     }
   }
+
+  return configData
 }
 
 function run(): void {
@@ -93,11 +105,11 @@ function run(): void {
     process.env.DEBUG === 'true'
   }
 
-  mdCraftConfig(verbose)
+  const config = mdCraftConfig()
   importPlugins()
 
   if (command in commands) {
-    commands[command].command()
+    commands[command].command(config)
   } else {
     help()
   }
