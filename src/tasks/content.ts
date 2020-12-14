@@ -4,11 +4,13 @@ import * as Handlebars from 'handlebars'
 import * as path from 'path'
 import {Converter} from 'showdown'
 import * as yaml from 'js-yaml'
-import {ApiData, CollectionData, TemplateConfig, SourceConfig} from './interfaces'
-import {PROJECT_ROOT_PATH, CONTENT_DIRECTORY, FEATURES, logger} from './settings'
+import {logger} from '../utilities/logger'
+import {PROJECT_ROOT_PATH, CONTENT_DIRECTORY, FEATURES} from '../utilities/settings'
+import {ApiData, CollectionData, SourceConfig, TemplateConfig} from '../utilities/interfaces'
 
 const THEME_TEMPLATE_PATH = path.join(PROJECT_ROOT_PATH, 'themes')
 const DEFAULT_THEME_TEMPLATE_PATH = path.join(THEME_TEMPLATE_PATH, 'default', 'default.html.hbs')
+let OUTPUT_DIRECTORY = './dist'
 
 function writeToFile(pathToFile: string, content: string): void {
   const parentDir = path.dirname(pathToFile)
@@ -94,103 +96,162 @@ function templateContent(data: TemplateConfig): string {
   return generatedPage
 }
 
-function convertMarkdownToHtml(text: string, wrap?: TemplateConfig): string {
+function convertMarkdownToHtml(text: string): string {
   const converter = new Converter({'tables': true})
-  let content = converter.makeHtml(text)
+  return converter.makeHtml(text)
+}
+
+function wrapDocument(text: string, wrap: TemplateConfig): string {
+  let wrapped: string = ''
 
   if (wrap) {
-    // {"class":"bar", "id":"barme", "element":"main"}
+    // {"id":"barme", "class":"bar", "element":"main"}
     let wrapElement = 'div'
     let wrapId = ''
     let wrapClass = ''
-
+  
     if (wrap['element']) {
-      wrapElement = wrap['element']
+      wrapElement = wrap['element'] as string
     }
-
+  
     if (wrap['id']) {
       wrapId = ` id="${wrap['id']}" `
     }
-
+  
     if (wrap['class']) {
       wrapClass = ` class="${wrap['class']}" `
     }
 
-    content = `<${wrapElement}${wrapId}${wrapClass}>${content}</${wrapElement}>`
+    wrapped = `<${wrapElement}${wrapId}${wrapClass}>${text}</${wrapElement}>`
   }
 
-  return content
+  return wrapped
 }
 
 function generateHtmlFromMarkdown(sourceData: SourceConfig): void {
-  if (sourceData.target && sourceData.source && sourceData.content) {
+  if (sourceData.target && sourceData.source && sourceData.content !== undefined) {
     logger.debug(`writing to ${sourceData.target} from ${sourceData.source}`)
 
     const templateLookup = {
       ...sourceData.data,
       content: sourceData.content,
-      themePath: getTemplateThemePath(sourceData.data.theme),
+      themePath: getTemplateThemePath(sourceData.data.theme as string),
     }
     let content = templateContent(templateLookup)
     content = postProcessContent(content)
 
     writeToFile(sourceData.target, content)
   } else {
-    logger.error('unable to generate target. data missing in sourceData')
+    logger.error(`unable to generate target (${sourceData.target}). data missing in sourceData (content=${sourceData.content})`)
   }
 }
 
-function parseMarkdown(pathToFile: string): SourceConfig {
-  const documentWithoutMetaData = 0
-  const liquidMetadataDocumentIndex = 1
-  const markdownDocumentIndex = 2
-  const sourceData: SourceConfig = {
+function generateDefaultSourceConfig(sourcePath: string): SourceConfig {
+  return {
     content: '',
     data: {
       format: 'md',
       theme: 'default',
     },
-    source: pathToFile,
-    target: path.join('./dist', pathToFile).replace(/.md$/, '.html'),
+    source: sourcePath,
+    target: path.join(OUTPUT_DIRECTORY, sourcePath).replace(/\.md$/, '.html'),
+  }
+}
+
+function registerWithApiData(apiData: ApiData, metadata: SourceConfig): void {
+  if (metadata['data']['index-title'] && metadata['data']['index-description']) {
+    if (metadata['data']['index-include'] === undefined || metadata['data']['index-include'] === 'true')  {
+      logger.debug(`including ${metadata.source} in document list`)
+      const relativePath = `/${path.relative(OUTPUT_DIRECTORY, metadata.target)}`
+      apiData.documents.push({
+        title: metadata['data']['index-title'],
+        description: metadata['data']['index-description'],
+        path: relativePath,
+        project: relativePath.split('/')[2],
+      })
+    } else {
+      logger.debug(`excluding ${metadata.source} from document list`)
+    }
+  } else {
+    logger.debug(`indexing metadata missing on ${metadata.source}, skipping`)
+  }
+}
+
+
+function registerCollection(collections: CollectionData, metadata: SourceConfig) {
+  const collectionPath = path.dirname(metadata.source)
+
+  if(!(collectionPath in collections)) {
+    collections[collectionPath] = {
+      data: {},
+      content: '',
+      source: '',
+      target: '',
+      resources: [],
+    } as SourceConfig
   }
 
-  if (fs.existsSync(sourceData.source)) {
+  collections[collectionPath]['content'] += metadata.content
+
+  if (metadata.source.endsWith('index.md')) {
+    // index likely won't be first so if set collection data to metadata then index data will be lost
+    // could separate index from other content to stop duplication of logic
+    collections[collectionPath]['data'] = metadata.data
+    collections[collectionPath]['source'] = metadata.source
+    collections[collectionPath]['target'] = OUTPUT_DIRECTORY + '/' + metadata.source.replace('md', 'html')
+    collections[collectionPath]['data'] = {...metadata.data}
+  } else {
+    collections[collectionPath]['resources'].push(metadata.data)
+  }
+}
+
+function parseSourceDocument(filePath: string): SourceConfig {
+  let metadata: SourceConfig = generateDefaultSourceConfig(filePath)
+
+  if (fs.existsSync(filePath)) {
     try {
-      const pageDocuments = fs.readFileSync(sourceData.source, 'utf8').toString().split(/---\n/)
+      const pageDocuments = fs.readFileSync(filePath, 'utf8').toString().split(/---\n/) as string[]
       if (pageDocuments.length > 1) {
         logger.debug('there appears to be meta data. processing')
-        sourceData.data = {
-          ...sourceData.data,
-          ...yaml.safeLoad(pageDocuments[liquidMetadataDocumentIndex]) as object,
+        const documentMetadata: TemplateConfig = yaml.safeLoad(pageDocuments[1]) as TemplateConfig
+        metadata.data = {
+          ...metadata.data,
+          ...documentMetadata,
         }
-        sourceData.content = pageDocuments[markdownDocumentIndex]
+
+        if (metadata.data.format !== 'html') {
+          for (let i = 2; i < pageDocuments.length; i++) {
+            if (pageDocuments[i].trim() === '') {
+              continue
+            }
+            metadata.content += wrapDocument(convertMarkdownToHtml(pageDocuments[i]), {class: `md-page-${i - 2}`})
+          }
+        } else {
+          // skip metadata and return document to previous state
+          metadata.content = pageDocuments.slice(2).join('---')
+        }
+        if (documentMetadata.wrap && typeof documentMetadata.wrap !== 'string') {
+          metadata.content = wrapDocument(metadata.content, documentMetadata.wrap)
+        }
       } else {
-        sourceData.content = pageDocuments[documentWithoutMetaData]
+        metadata.content = pageDocuments[0] // no metadata, just document
       }
 
-      if (sourceData.data.target) {
-        sourceData.target = path.join('./dist', sourceData.data.target)
+      if (metadata.data.target) {
+        metadata.target = path.join(OUTPUT_DIRECTORY, metadata.data.target as string)
       }
+
+      // wrap and convert content now
     } catch (error) {
-      logger.error(`unable to read front matter from ${pathToFile}\n${error.toString()}`)
+      logger.error(`unable to read metadata from ${filePath}\n${error.toString()}`)
     }
   }
 
-  return sourceData
+  return metadata
 }
 
-function registerContentWithApi(sourceData: SourceConfig, projectData: TemplateConfig, apiData: ApiData): void {
-  if (projectData.path && projectData.title && projectData.project) {
-    if ('index-include' in sourceData['data'] && !sourceData['data']['index-include']) {
-      logger.info(`skipping ${projectData.path}`)
-    } else {
-      apiData.documents.push(projectData)
-    }
-  }
-}
-
-export function generateSourceContent(): void {
-  logger.updateLevel('')
+export function generateSourceContent(config: any): void {
+  OUTPUT_DIRECTORY = config.craft.output.destination
 
   if (FEATURES.hasOwnProperty('contentGeneration') && FEATURES.contentGeneration) {
     logger.info('generating source content')
@@ -202,17 +263,40 @@ export function generateSourceContent(): void {
 
     for (const sourceRelPath of glob.sync(`./${CONTENT_DIRECTORY}/**/*.md`)) {
       logger.info(`processing ${sourceRelPath}`)
+
+      const metadata: SourceConfig = parseSourceDocument(sourceRelPath)
+
+      if (metadata.data.format === 'html') {
+        writeToFile(metadata.target, metadata.content)
+      } else if (metadata.data.format === 'collection') {
+        registerCollection(collections, metadata)
+      } else if (metadata.data.format === 'md') {
+        generateHtmlFromMarkdown(metadata)
+      } else {
+        logger.error(`unknown data format in ${sourceRelPath}: ${metadata.data.format}`)
+      }
+
+      if (
+        metadata.data.format !== 'collection'
+        || (metadata.data.format === 'collection' && metadata.source.endsWith('index.md'))
+      ) {
+        registerWithApiData(apiData, metadata)
+      }
+
+      /* refactor start
+      logger.info(`processing ${sourceRelPath}`)
       const sourceData: SourceConfig = parseMarkdown(sourceRelPath)
-      const projectData = {
+      const projectData: TemplateConfig = {
         title: sourceData['data']['index-title'],
         description: sourceData['data']['index-description'],
         path: sourceRelPath.replace('md', 'html'),
         project: sourceData.target.split('/')[2],
-      } as TemplateConfig
+      }
 
       if (sourceData.data.format === 'html') {
         writeToFile(sourceData.target, sourceData.content)
       } else if (sourceData.data.format === 'collection') {
+        // registerCollection
         const collectionPath = path.dirname(sourceRelPath)
         projectData['content'] = sourceData.content
 
@@ -233,7 +317,7 @@ export function generateSourceContent(): void {
           collections[collectionPath]['data'] = projectData
           // this seems familiar
           collections[collectionPath]['source'] = sourceRelPath
-          collections[collectionPath]['target'] = './dist/' + sourceRelPath.replace('md', 'html')
+          collections[collectionPath]['target'] = OUTPUT_DIRECTORY + '/' + sourceRelPath.replace('md', 'html')
           collections[collectionPath]['data'] = {...sourceData.data}
           // collections[collectionPath]['data']['theme'] = sourceData.data.theme
         } else {
@@ -251,6 +335,8 @@ export function generateSourceContent(): void {
         generateHtmlFromMarkdown(sourceData)
         registerContentWithApi(sourceData, projectData, apiData)
       }
+      // refactor end
+      */
     }
 
     if (FEATURES.hasOwnProperty('collectionGeneration') && FEATURES.collectionGeneration) {
@@ -258,24 +344,14 @@ export function generateSourceContent(): void {
       for (const collectionRef in collections) {
         logger.info(`processing collection ${collectionRef}`)
         logger.debug(collections[collectionRef])
-        for (const resource of collections[collectionRef]['resources']) {
-          const itemContent = convertMarkdownToHtml(resource.content, resource.wrap)
-
-          if (collections[collectionRef]['content']) {
-            collections[collectionRef]['content'] += itemContent
-          } else {
-            collections[collectionRef]['content'] = itemContent
-          }
-        }
-        delete collections[collectionRef]['resources']
         generateHtmlFromMarkdown(collections[collectionRef])
-        registerContentWithApi(collections[collectionRef], collections[collectionRef]['projectData'], apiData)
+        // registerContentWithApi(collections[collectionRef], collections[collectionRef]['projectData'], apiData)
       }
     }
 
     if (FEATURES.hasOwnProperty('apiGeneration') && FEATURES.apiGeneration) {
       logger.info('generating api data')
-      const apiDataPath = './dist/api/'
+      const apiDataPath = OUTPUT_DIRECTORY + '/api/'
       const apiDataFile = path.join(apiDataPath, 'data.json')
 
       writeToFile(apiDataFile, JSON.stringify(apiData))
