@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as url from 'url'
 import {createServer, IncomingMessage, ServerResponse} from 'http'
-import {logger} from './settings'
+import {logger} from '../utilities/logger'
 
 export const helpText = 'server     Start a local server to serve content'
 
@@ -39,8 +39,8 @@ function indexExists(filePath: string): boolean {
   return hasIndex
 }
 
-export function command(): void {
-  const HTTP_SERVER_PORT = process.env.MDSERVER_PORT || '3001'
+export function command(config: any): void {
+  const HTTP_SERVER_PORT = config.server?.port || '3001'
   const HTTP_SERVER_ROOT = process.env.MDSERVER_ROOT || path.join(process.cwd(), 'dist')
   const DEFAULT_ERROR_PAGE = path.join(HTTP_SERVER_ROOT, 'error.html')
 
