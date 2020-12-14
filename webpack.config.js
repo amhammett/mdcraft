@@ -3,9 +3,7 @@ const path = require('path')
 module.exports = {
   mode: process.env.NODE_ENV,
   entry: {
-    index: ['./src/index.ts'],
-    craft: ['./src/craft.ts'],
-    server: ['./src/server.ts'],
+    index: ['./src/cli/index.ts'],
   },
   module: {
     rules: [
@@ -16,7 +14,10 @@ module.exports = {
       },
     ],
   },
-  externals: ['pino-pretty'],
+  externals: {
+    'pino-pretty': 'pino-pretty',
+    './mdcraft.config.js': 'mdcraft.config.js',
+  },
   resolve: {
     extensions: ['.ts', '.js', '.json'],
     alias: {
