@@ -1,6 +1,6 @@
 {
   "name": "mdcraft",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "crafting html from markdown",
   "bin": {
     "mdcraft": "./bin/mdcraft"
