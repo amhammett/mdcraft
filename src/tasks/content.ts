@@ -102,22 +102,22 @@ function convertMarkdownToHtml(text: string): string {
 }
 
 function wrapDocument(text: string, wrap: TemplateConfig): string {
-  let wrapped: string = ''
+  let wrapped = ''
 
   if (wrap) {
     // {"id":"barme", "class":"bar", "element":"main"}
     let wrapElement = 'div'
     let wrapId = ''
     let wrapClass = ''
-  
+
     if (wrap['element']) {
       wrapElement = wrap['element'] as string
     }
-  
+
     if (wrap['id']) {
       wrapId = ` id="${wrap['id']}" `
     }
-  
+
     if (wrap['class']) {
       wrapClass = ` class="${wrap['class']}" `
     }
@@ -178,7 +178,7 @@ function registerWithApiData(apiData: ApiData, metadata: SourceConfig): void {
 }
 
 
-function registerCollection(collections: CollectionData, metadata: SourceConfig) {
+function registerCollection(collections: CollectionData, metadata: SourceConfig): void {
   const collectionPath = path.dirname(metadata.source)
 
   if(!(collectionPath in collections)) {
@@ -206,11 +206,11 @@ function registerCollection(collections: CollectionData, metadata: SourceConfig)
 }
 
 function parseSourceDocument(filePath: string): SourceConfig {
-  let metadata: SourceConfig = generateDefaultSourceConfig(filePath)
+  const metadata: SourceConfig = generateDefaultSourceConfig(filePath)
 
   if (fs.existsSync(filePath)) {
     try {
-      const pageDocuments = fs.readFileSync(filePath, 'utf8').toString().split(/---\n/) as string[]
+      const pageDocuments = fs.readFileSync(filePath, 'utf8').toString().split(/---[\r\n|\r|\n]/) as string[]
       if (pageDocuments.length > 1) {
         logger.debug('there appears to be meta data. processing')
         const documentMetadata: TemplateConfig = yaml.safeLoad(pageDocuments[1]) as TemplateConfig
